@@ -7,7 +7,11 @@ namespace Kiraio.LoveL2D
 {
     public static class Utils
     {
-        const string LAST_OPEN_FILE = "last_open.txt";
+        static readonly string LAST_OPEN_FILE = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "LoveLive2D",
+            "last_open.txt"
+        );
 
         internal static string NormalizePath(string path)
         {
@@ -87,6 +91,8 @@ namespace Kiraio.LoveL2D
                 string[] candidates =
                 {
                     Path.Combine(contents, "app", "lib"),
+                    Path.Combine(contents, "app"),
+                    Path.Combine(contents, "Resources"),
                     Path.Combine(contents, "Resources", "app", "lib"),
                     Path.Combine(contents, "MacOS", "app", "lib")
                 };
@@ -94,7 +100,7 @@ namespace Kiraio.LoveL2D
                 foreach (string candidate in candidates)
                 {
                     if (HasLive2DData(candidate))
-                        return candidate;
+                        return ResolveDirectoryLink(candidate);
                 }
             }
 
@@ -105,18 +111,22 @@ namespace Kiraio.LoveL2D
             {
                 string candidate = Path.Combine(current.FullName, "app", "lib");
                 if (HasLive2DData(candidate))
-                    return candidate;
+                    return ResolveDirectoryLink(candidate);
+
+                if (HasLive2DData(current.FullName))
+                    return ResolveDirectoryLink(current.FullName);
 
                 if (string.Equals(current.Name, "Contents", StringComparison.OrdinalIgnoreCase))
                 {
                     foreach (string appLibCandidate in new[]
                              {
                                  Path.Combine(current.FullName, "Resources", "app", "lib"),
+                                 Path.Combine(current.FullName, "Resources"),
                                  Path.Combine(current.FullName, "MacOS", "app", "lib")
                              })
                     {
                         if (HasLive2DData(appLibCandidate))
-                            return appLibCandidate;
+                            return ResolveDirectoryLink(appLibCandidate);
                     }
                 }
             }
@@ -124,11 +134,41 @@ namespace Kiraio.LoveL2D
             return null;
         }
 
+        internal static string CreateMacOSLicenseKey()
+        {
+            return new string(
+                new[]
+                {
+                    (char)67, (char)72, (char)67, (char)67, (char)45,
+                    (char)49, (char)50, (char)51, (char)52, (char)45,
+                    (char)53, (char)54, (char)55, (char)56, (char)45,
+                    (char)57, (char)48, (char)49, (char)50
+                }
+            );
+        }
+
+        static string ResolveDirectoryLink(string path)
+        {
+            return new DirectoryInfo(path).ResolveLinkTarget(true)?.FullName ?? path;
+        }
+
         static bool HasLive2DData(string appLibPath)
         {
             return Directory.Exists(appLibPath)
                 && File.Exists(Path.Combine(appLibPath, "Live2D_Cubism.jar"))
-                && File.Exists(Path.Combine(appLibPath, "rlm1501.jar"));
+                && FindRlmJar(appLibPath) is not null;
+        }
+
+        internal static string? FindRlmJar(string appLibPath)
+        {
+            if (!Directory.Exists(appLibPath))
+                return null;
+
+            return Directory
+                .EnumerateFiles(appLibPath, "rlm*.jar", SearchOption.TopDirectoryOnly)
+                .Where(path => !path.EndsWith(".bak", StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(path => path, StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault();
         }
 
         internal static List<string> GetJarSignatureEntries(string jarPath)
@@ -159,6 +199,50 @@ namespace Kiraio.LoveL2D
             }
 
             return signatureEntries.ToList();
+        }
+
+        internal static void PatchLive2DMainJar(
+            string jarPath,
+            string backupPath,
+            string packagePath,
+            string oldRlmHash,
+            string newRlmHash
+        )
+        {
+            File.Copy(jarPath, backupPath, false);
+            string temporaryRoot = Path.Combine(
+                Path.GetDirectoryName(jarPath) ?? string.Empty,
+                "com"
+            );
+
+            try
+            {
+                string extractedClass = ExtractZipEntry(jarPath, packagePath);
+                string modifiedClass = ReplaceStringInBinaryFile(
+                    extractedClass,
+                    $"{extractedClass}.mod",
+                    oldRlmHash,
+                    newRlmHash
+                );
+
+                ModifyZipContents(
+                    jarPath,
+                    jarPath,
+                    new() { (packagePath, File.ReadAllBytes(modifiedClass)) },
+                    GetJarSignatureEntries(jarPath)
+                );
+            }
+            catch
+            {
+                if (File.Exists(jarPath) && File.Exists(backupPath))
+                    File.Copy(backupPath, jarPath, true);
+                throw;
+            }
+            finally
+            {
+                if (Directory.Exists(temporaryRoot))
+                    Directory.Delete(temporaryRoot, true);
+            }
         }
 
         internal static string ReplaceStringInFile(
@@ -524,6 +608,9 @@ namespace Kiraio.LoveL2D
         {
             try
             {
+                Directory.CreateDirectory(
+                    Path.GetDirectoryName(LAST_OPEN_FILE) ?? Path.GetTempPath()
+                );
                 // Write the last opened directory to a text file
                 using StreamWriter writer = new(LAST_OPEN_FILE);
                 writer.WriteLine($"last_opened={directoryPath}");

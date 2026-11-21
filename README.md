@@ -8,12 +8,13 @@
 
 ## Supported Versions
 
-- Live2D Cubism v5.0.00^
+- Live2D Cubism v5.0.00 and v5.3.x
 
 ## Prerequisites
 
 - [Live2D Cubism](https://www.live2d.com/en/cubism/download/editor/ "Live2D Cubism")
-- [.NET 6.0 SDK](https://dotnet.microsoft.com/download/dotnet/6.0 ".NET 6.0 SDK") or [.NET 7.0 SDK](https://dotnet.microsoft.com/download/dotnet/7.0 ".NET 7.0 SDK")
+- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0 ".NET 8.0 SDK")
+- Java 17 JDK, used to build the bundled RLM compatibility JARs
 
 ## How To Use
 
@@ -23,14 +24,23 @@
 - On macOS, run `LoveLive2D` and select the Live2D Cubism `.app` bundle.
 - Follow the instructions.
 
+For non-interactive testing or automation:
+
+```sh
+LoveLive2D --patch --target "/Applications/Live2D Cubism 5.0/Live2D Cubism Editor 5.0.app"
+LoveLive2D --revoke --target "/Applications/Live2D Cubism 5.0/Live2D Cubism Editor 5.0.app"
+```
+
 ## macOS
 
 Both Intel (`osx-x64`) and Apple Silicon (`osx-arm64`) builds are supported. The
 published application is framework-dependent, so install the matching .NET runtime.
+Live2D 5.0 uses `rlm1501.jar`; Live2D 5.3 uses `rlm1603.jar` and also checks a
+recorded SHA-256. The tool patches the matching RLM JAR and the expected hash.
 
 Changing a JAR inside a signed `.app` invalidates its signature. If the application
 does not launch after patching or revoking, re-sign the bundle on your Mac. The tool
-backs up `Live2D_Cubism.jar` and `rlm1501.jar` beside their originals and provides a
+backs up `Live2D_Cubism.jar` and the RLM JAR beside their originals and provides a
 revoke action to restore them.
 
 ## Disclaimer

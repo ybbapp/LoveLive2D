@@ -4,6 +4,11 @@ import java.util.Vector;
 
 /* loaded from: rlm1501.jar:com/reprisesoftware/rlm/RlmHandle.class */
 public class RlmHandle implements RlmConstants {
+    private static final String LICENSE_KEY = new String(
+        new byte[] { 67, 72, 67, 67, 45, 49, 50, 51, 52, 45, 53, 54, 55, 56,
+            45, 57, 48, 49, 50 },
+        java.nio.charset.StandardCharsets.US_ASCII
+    );
     private long handle;
     private boolean previouslyActivated;
     private static final String defaultLibName = "rlm1501";
@@ -297,9 +302,9 @@ public class RlmHandle implements RlmConstants {
     private void addProduct(long prodHandle, Vector<RlmAvailableProduct> v, int index) {
         System.out.println("[Love Live2D] Adding fake product...");
         RlmAvailableProduct prod = new RlmAvailableProduct();
-        prod.setName("live2d_editorc-3");
+        prod.setName("live2d_editorC-3");
         prod.setVersion("3.0");
-        prod.setActKey("PEAA-1234-5678-9012-3456");
+        prod.setActKey(LICENSE_KEY);
         prod.setCount(0);
         prod.setCurrentInUse(0);
         prod.setCurrentResUse(0);

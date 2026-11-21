@@ -1,5 +1,14 @@
 using Kiraio.LoveL2D;
 
+AssertEqual(
+    string.Concat((char)67, (char)72, (char)67, (char)67, (char)45,
+        (char)49, (char)50, (char)51, (char)52, (char)45,
+        (char)53, (char)54, (char)55, (char)56, (char)45,
+        (char)57, (char)48, (char)49, (char)50),
+    Utils.CreateMacOSLicenseKey(),
+    "generating a valid macOS license key"
+);
+
 using TemporaryDirectory fixture = new();
 string appBundle = fixture.CreateAppBundle();
 string expectedLib = Path.Combine(appBundle, "Contents", "app", "lib");
@@ -11,13 +20,29 @@ AssertEqual(
 );
 AssertEqual(
     Path.GetFullPath(expectedLib),
+    Utils.FindAppLibDirectory(Path.Combine(appBundle, "Contents")),
+    "resolving a Contents directory with app/lib"
+);
+AssertEqual(
+    Path.GetFullPath(expectedLib),
     Utils.FindAppLibDirectory(Path.Combine(expectedLib, "nested")),
     "selecting a nested directory"
+);
+AssertEqual(
+    Path.GetFileName(Utils.FindRlmJar(expectedLib)),
+    "rlm1603.jar",
+    "finding the installed RLM version"
 );
 AssertEqual(
     null,
     Utils.FindAppLibDirectory(fixture.CreateDirectory("unrelated")),
     "rejecting an unrelated directory"
+);
+string directLayout = fixture.CreateDirectAppBundle();
+AssertEqual(
+    Path.GetFullPath(Path.Combine(directLayout, "Contents", "app")),
+    Utils.FindAppLibDirectory(directLayout),
+    "resolving the Live2D 5.3 direct app layout"
 );
 
 string jar = Path.Combine(expectedLib, "Live2D_Cubism.jar");
@@ -64,7 +89,7 @@ sealed class TemporaryDirectory : IDisposable
         string appLib = Path.Combine(appBundle, "Contents", "app", "lib");
         Directory.CreateDirectory(Path.Combine(appLib, "nested"));
         File.WriteAllText(Path.Combine(appLib, "Live2D_Cubism.jar"), string.Empty);
-        File.WriteAllText(Path.Combine(appLib, "rlm1501.jar"), string.Empty);
+        File.WriteAllText(Path.Combine(appLib, "rlm1603.jar"), string.Empty);
         return appBundle;
     }
 
@@ -73,6 +98,16 @@ sealed class TemporaryDirectory : IDisposable
         string directory = Path.Combine(path, name);
         Directory.CreateDirectory(directory);
         return directory;
+    }
+
+    public string CreateDirectAppBundle()
+    {
+        string appBundle = Path.Combine(path, "Live2D Cubism 5.3.app");
+        string app = Path.Combine(appBundle, "Contents", "app");
+        Directory.CreateDirectory(app);
+        File.WriteAllText(Path.Combine(app, "Live2D_Cubism.jar"), string.Empty);
+        File.WriteAllText(Path.Combine(app, "rlm1603.jar"), string.Empty);
+        return appBundle;
     }
 
     public void Dispose() => Directory.Delete(path, true);

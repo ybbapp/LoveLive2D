@@ -30,29 +30,30 @@ done
 
 echo "Build process completed for all target OS architectures."
 
-SOURCE_DIR="src/rlm1501/sources/com/reprisesoftware/rlm"
 MANIFEST="src/rlm1501/resources/META-INF/MANIFEST.MF"
-OUTPUT_DIR="bin/Release/rlm1501/classes"
-OUTPUT_JAR="src/rlm1501/rlm1501.jar"
+MOD_VERSIONS=("rlm1501" "rlm1603")
+for mod_version in "${MOD_VERSIONS[@]}"
+do
+    if [[ "$mod_version" == "rlm1501" ]]; then
+        SOURCE_DIR="src/rlm1501/sources/com/reprisesoftware/rlm"
+    else
+        SOURCE_DIR="src/rlm1603/com/reprisesoftware/rlm"
+    fi
 
-# Create the output directory if it doesn't exist
-mkdir -p "${OUTPUT_DIR}"
+    OUTPUT_DIR="bin/Release/${mod_version}/classes"
+    OUTPUT_JAR="mod/${mod_version}/${mod_version}.jar"
+    mkdir -p "${OUTPUT_DIR}"
+    rm -rf "${OUTPUT_DIR}"/*
 
-# Compile Java classes
-echo "Building rlm1501..."
-javac -d "${OUTPUT_DIR}" "${SOURCE_DIR}"/*.java -Xlint:unchecked
-echo "Successfully build rlm1501."
-
-# Check if compilation was successful
-if [ $? -eq 0 ]; then
-    # Create JAR file
-    echo "Packing rlm1501 as .jar..."
+    echo "Building ${mod_version}..."
+    javac --release 17 -d "${OUTPUT_DIR}" "${SOURCE_DIR}"/*.java -Xlint:unchecked
     jar cfm "${OUTPUT_JAR}.new" "${MANIFEST}" -C "${OUTPUT_DIR}" .
     mv "${OUTPUT_JAR}.new" "${OUTPUT_JAR}"
-    echo "JAR file '${OUTPUT_JAR}' created successfully."
-else
-    echo "Packing failed. JAR file not created."
-fi
+done
+
+mkdir -p lib
+cp mod/rlm1501/rlm1501.jar lib/rlm1501.jar
+cp mod/rlm1603/rlm1603.jar lib/rlm1603.jar
 
 # Create "lib" directory to store modified "rlm1501.jar"
 echo "Distributing rlm1501.jar for every architecture..."
@@ -60,10 +61,11 @@ for framework in "${TARGET_FRAMEWORKS[@]}"
 do
     for os_arch in "${TARGET_OS_ARCHITECTURES[@]}"
     do
-        # Copy lrm1501.jar to every architecture
-        LIB_PATH="bin/Release/${framework}/${os_arch}/publish/lib"
-        mkdir -p "${LIB_PATH}"
-        cp "${OUTPUT_JAR}" "${LIB_PATH}"
+        # Copy version-specific mod JARs to every architecture
+        MOD_PATH="bin/Release/${framework}/${os_arch}/publish/lib"
+        mkdir -p "${MOD_PATH}"
+        cp mod/rlm1501/rlm1501.jar "${MOD_PATH}/"
+        cp mod/rlm1603/rlm1603.jar "${MOD_PATH}/"
     done
 
     for os_arch in "${TARGET_OS_ARCHITECTURES[@]}"

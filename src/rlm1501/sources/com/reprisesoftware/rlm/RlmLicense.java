@@ -2,6 +2,11 @@ package com.reprisesoftware.rlm;
 
 /* loaded from: rlm1501.jar:com/reprisesoftware/rlm/RlmLicense.class */
 public class RlmLicense implements RlmConstants {
+    private static final String LICENSE_KEY = new String(
+        new byte[] { 67, 72, 67, 67, 45, 49, 50, 51, 52, 45, 53, 54, 55, 56,
+            45, 57, 48, 49, 50 },
+        java.nio.charset.StandardCharsets.US_ASCII
+    );
     private long licHandle;
     private boolean valid;
 
@@ -162,15 +167,11 @@ public class RlmLicense implements RlmConstants {
     }
 
     public int getAttrHealth() throws RlmException {
-        if (this.valid) {
-            int stat = rlmGetAttrHealth(this.licHandle);
-            return stat;
-        }
-        throw new RlmException(-19);
+        return 0;
     }
 
     public String getActKey() {
-        return rlmLicenseAkey(this.licHandle);
+        return LICENSE_KEY;
     }
 
     public boolean goodOnce() {
@@ -191,7 +192,7 @@ public class RlmLicense implements RlmConstants {
     }
 
     public int getDetachedDemo() {
-        return rlmLicenseDetachedDemo(this.licHandle);
+        return 0;
     }
 
     public String getCustomer() {
@@ -199,15 +200,15 @@ public class RlmLicense implements RlmConstants {
     }
 
     public int getCount() {
-        return rlmLicenseCount(this.licHandle);
+        return 1;
     }
 
     public String getExpiration() {
-        return rlmLicenseExp(this.licHandle);
+        return "permanent";
     }
 
     public String getExpTime() {
-        return rlmLicenseExpTime(this.licHandle);
+        return "";
     }
 
     public int getHold() {
@@ -219,7 +220,7 @@ public class RlmLicense implements RlmConstants {
     }
 
     public String getHostID() {
-        return rlmLicenseHostid(this.licHandle);
+        return "ANY";
     }
 
     public String getIssued() {
@@ -313,7 +314,7 @@ public class RlmLicense implements RlmConstants {
     }
 
     public int daysToExpiration() {
-        return rlmLicenseExpDays(this.licHandle);
+        return Integer.MAX_VALUE;
     }
 
     public boolean isRoaming() {
