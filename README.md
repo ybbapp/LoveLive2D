@@ -19,8 +19,19 @@
 
 - Install Live2D Cubism as usual.
 - Download Love Live2D at [Releases](https://github.com/kiraio-moe/LoveLive2D/ "Releases").
-- Run `LoveLive2D.exe` (_Run as Administrator if necessary_).
+- On Windows, run `LoveLive2D.exe` (_Run as Administrator if necessary_).
+- On macOS, run `LoveLive2D` and select the Live2D Cubism `.app` bundle.
 - Follow the instructions.
+
+## macOS
+
+Both Intel (`osx-x64`) and Apple Silicon (`osx-arm64`) builds are supported. The
+published application is framework-dependent, so install the matching .NET runtime.
+
+Changing a JAR inside a signed `.app` invalidates its signature. If the application
+does not launch after patching or revoking, re-sign the bundle on your Mac. The tool
+backs up `Live2D_Cubism.jar` and `rlm1501.jar` beside their originals and provides a
+revoke action to restore them.
 
 ## Disclaimer
 

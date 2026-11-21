@@ -60,6 +60,107 @@ namespace Kiraio.LoveL2D
             return string.Empty;
         }
 
+        internal static string? FindAppLibDirectory(string selectedPath)
+        {
+            if (string.IsNullOrWhiteSpace(selectedPath))
+                return null;
+
+            string path = Path.GetFullPath(selectedPath);
+            FileSystemInfo? info = Directory.Exists(path)
+                ? new DirectoryInfo(path)
+                : File.Exists(path)
+                    ? new FileInfo(path)
+                    : null;
+
+            if (info is null)
+                return null;
+
+            // Move from a selected file or nested directory up towards its enclosing .app.
+            for (DirectoryInfo? current = info as DirectoryInfo ?? ((FileInfo)info).Directory;
+                current is not null;
+                current = current.Parent)
+            {
+                if (!string.Equals(current.Extension, ".app", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                string contents = Path.Combine(current.FullName, "Contents");
+                string[] candidates =
+                {
+                    Path.Combine(contents, "app", "lib"),
+                    Path.Combine(contents, "Resources", "app", "lib"),
+                    Path.Combine(contents, "MacOS", "app", "lib")
+                };
+
+                foreach (string candidate in candidates)
+                {
+                    if (HasLive2DData(candidate))
+                        return candidate;
+                }
+            }
+
+            // Also support selecting a directory that already contains app/lib.
+            for (DirectoryInfo? current = info as DirectoryInfo ?? ((FileInfo)info).Directory;
+                current is not null;
+                current = current.Parent)
+            {
+                string candidate = Path.Combine(current.FullName, "app", "lib");
+                if (HasLive2DData(candidate))
+                    return candidate;
+
+                if (string.Equals(current.Name, "Contents", StringComparison.OrdinalIgnoreCase))
+                {
+                    foreach (string appLibCandidate in new[]
+                             {
+                                 Path.Combine(current.FullName, "Resources", "app", "lib"),
+                                 Path.Combine(current.FullName, "MacOS", "app", "lib")
+                             })
+                    {
+                        if (HasLive2DData(appLibCandidate))
+                            return appLibCandidate;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        static bool HasLive2DData(string appLibPath)
+        {
+            return Directory.Exists(appLibPath)
+                && File.Exists(Path.Combine(appLibPath, "Live2D_Cubism.jar"))
+                && File.Exists(Path.Combine(appLibPath, "rlm1501.jar"));
+        }
+
+        internal static List<string> GetJarSignatureEntries(string jarPath)
+        {
+            const string metaInf = "META-INF/";
+            string[] signatureExtensions = { ".SF", ".RSA", ".DSA", ".EC" };
+            HashSet<string> signatureEntries = new(StringComparer.OrdinalIgnoreCase);
+
+            using ZipFile zipFile = new(jarPath);
+            foreach (ZipEntry entry in zipFile)
+            {
+                if (!entry.IsFile || !entry.Name.StartsWith(metaInf, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                string fileName = Path.GetFileName(entry.Name);
+                bool isSignature = string.Equals(
+                    entry.Name,
+                    $"{metaInf}MANIFEST.MF",
+                    StringComparison.OrdinalIgnoreCase
+                );
+                isSignature |=
+                    signatureExtensions.Any(
+                        ext => fileName.EndsWith(ext, StringComparison.OrdinalIgnoreCase)
+                    );
+
+                if (isSignature)
+                    signatureEntries.Add(entry.Name);
+            }
+
+            return signatureEntries.ToList();
+        }
+
         internal static string ReplaceStringInFile(
             string filePath,
             string oldString,
@@ -337,7 +438,20 @@ namespace Kiraio.LoveL2D
                 {
                     foreach (ZipEntry entry in zipFile)
                     {
-                        string? entryPath = Path.Combine(outputFolder, entry.Name);
+                        string fullOutputFolder = Path.GetFullPath(outputFolder);
+                        string? entryPath = Path.GetFullPath(
+                            Path.Combine(fullOutputFolder, entry.Name)
+                        );
+                        if (!entryPath.StartsWith(
+                            fullOutputFolder + Path.DirectorySeparatorChar,
+                            StringComparison.Ordinal
+                        ))
+                        {
+                            AnsiConsole.MarkupLineInterpolated(
+                                $"[red]Skipping unsafe ZIP entry: {entry.Name}[/]"
+                            );
+                            continue;
+                        }
                         Directory.CreateDirectory(Path.GetDirectoryName(entryPath) ?? string.Empty);
 
                         if (!entry.IsDirectory)

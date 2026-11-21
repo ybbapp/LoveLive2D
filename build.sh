@@ -1,4 +1,6 @@
 #!/bin/bash
+set -euo pipefail
+
 VERSION="1.0.0"
 # Build Love Live2D
 echo "Building Love Live2D..."
@@ -6,7 +8,7 @@ echo "Building Love Live2D..."
 # echo "Build process completed for all target OS architectures."
 # Define the target operating systems and architectures
 TARGET_OS_ARCHITECTURES=("win-x64" "win-arm64" "osx-x64" "osx-arm64")
-TARGET_FRAMEWORKS=("net6.0" "net7.0")
+TARGET_FRAMEWORKS=("net6.0" "net7.0" "net8.0")
 
 # Build the project for each target OS architecture
 for os_arch in "${TARGET_OS_ARCHITECTURES[@]}"
@@ -29,8 +31,9 @@ done
 echo "Build process completed for all target OS architectures."
 
 SOURCE_DIR="src/rlm1501/sources/com/reprisesoftware/rlm"
-OUTPUT_DIR="bin/Release/rlm1501"
-OUTPUT_JAR="bin/Release/rlm1501/rlm1501.jar"
+MANIFEST="src/rlm1501/resources/META-INF/MANIFEST.MF"
+OUTPUT_DIR="bin/Release/rlm1501/classes"
+OUTPUT_JAR="src/rlm1501/rlm1501.jar"
 
 # Create the output directory if it doesn't exist
 mkdir -p "${OUTPUT_DIR}"
@@ -44,7 +47,8 @@ echo "Successfully build rlm1501."
 if [ $? -eq 0 ]; then
     # Create JAR file
     echo "Packing rlm1501 as .jar..."
-    jar cf "${OUTPUT_JAR}" -C "${OUTPUT_DIR}" .
+    jar cfm "${OUTPUT_JAR}.new" "${MANIFEST}" -C "${OUTPUT_DIR}" .
+    mv "${OUTPUT_JAR}.new" "${OUTPUT_JAR}"
     echo "JAR file '${OUTPUT_JAR}' created successfully."
 else
     echo "Packing failed. JAR file not created."
@@ -71,3 +75,12 @@ do
         cd "../../../../../" # build.sh directory
     done
 done
+
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    echo
+    echo "Generated macOS artifacts:"
+    find bin/Release -maxdepth 1 -name 'LoveLive2D-*-osx-*.zip' -print | sort
+    echo
+    echo "The artifacts are framework-dependent. Keep the matching .NET runtime installed."
+    echo "If Live2D is code-signed, re-sign its .app bundle after patching it."
+fi
