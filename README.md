@@ -24,6 +24,43 @@
 - On macOS, run `LoveLive2D` and select the Live2D Cubism `.app` bundle.
 - Follow the instructions.
 
+### macOS one-click installation
+
+Run:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/ybbapp/LoveLive2D/main/install-macos.sh | bash
+```
+
+The release bundle includes the matching .NET runtime. The installer detects
+Intel or Apple Silicon, installs into
+`~/Applications/LoveLive2D`, and creates `~/Applications/LoveLive2D/LoveLive2D.command`.
+Double-click that `.command` file to start the tool.
+
+When building from a cloned source tree, install the
+[.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0), then run:
+
+```sh
+chmod +x install-macos.sh
+./install-macos.sh
+```
+
+You can choose another install location with `LOVELIVE2D_HOME`:
+
+```sh
+LOVELIVE2D_HOME="$HOME/tools/LoveLive2D" ./install-macos.sh
+```
+
+Set `LOVELIVE2D_RELEASE_URL` to test a specific self-contained package:
+
+```sh
+LOVELIVE2D_RELEASE_URL="https://github.com/ybbapp/LoveLive2D/releases/download/v1.0.0/LoveLive2D-v1.0.0-net8.0-osx-arm64-self-contained.zip" ./install-macos.sh
+```
+
+The installer downloads the self-contained GitHub release asset. If that download
+fails and the script is being run from a cloned source tree, it builds and publishes
+the selected macOS architecture locally.
+
 For non-interactive testing or automation:
 
 ```sh

@@ -22,6 +22,17 @@ namespace Kiraio.LoveL2D
             bool shouldRevoke = args.Any(
                 argument => string.Equals(argument, "--revoke", StringComparison.OrdinalIgnoreCase)
             );
+            if (
+                args.Any(
+                    argument =>
+                        string.Equals(argument, "--help", StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(argument, "-h", StringComparison.OrdinalIgnoreCase)
+                )
+            )
+            {
+                PrintHelp();
+                return;
+            }
             int targetIndex = Array.FindIndex(
                 args,
                 argument =>
